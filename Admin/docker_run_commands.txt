@@ -14,3 +14,8 @@ pip freeze > requirements.txt
 docker stop $(docker ps -aq)
 docker rm $(docker ps -aq)
 docker rmi $(docker images -q)
+
+
+git add .
+git commit -m "0.2"
+git push origin master        

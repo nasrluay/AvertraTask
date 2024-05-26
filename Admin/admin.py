@@ -30,8 +30,8 @@ def create_vector_store(request_id, documents):
         vectorstore_faiss = FAISS.from_documents(documents, bedrock_embeddings)
         file_name = f"{request_id}.bin"
         vectorstore_faiss.save_local(index_name=file_name, folder_path=folder_path)
-        s3_client.upload_file(Filename=f"{folder_path}/{file_name}.faiss", Bucket=BUCKET_NAME, Key=f"{request_id}.faiss")
-        s3_client.upload_file(Filename=f"{folder_path}/{file_name}.pkl", Bucket=BUCKET_NAME, Key=f"{request_id}.pkl")
+        s3_client.upload_file(Filename=f"{folder_path}{file_name}.faiss", Bucket=BUCKET_NAME, Key=f"{request_id}.faiss")
+        s3_client.upload_file(Filename=f"{folder_path}{file_name}.pkl", Bucket=BUCKET_NAME, Key=f"{request_id}.pkl")
         return True
     except Exception as e:
         st.error(f"Error creating vector store: {e}")
@@ -67,6 +67,7 @@ def admin_interface():
                 result = create_vector_store(request_id, splitted_docs)
                 if result:
                     st.success("Vector store created and uploaded successfully.")
+                    # Write request ID to file named id_file_name.txt
                 else:
                     st.error("Failed to create vector store. Check logs for details.")
         except Exception as e:
@@ -74,6 +75,3 @@ def admin_interface():
 
 if __name__ == "__main__":
     admin_interface()
-
-
-#####################################

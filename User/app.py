@@ -16,15 +16,17 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 BUCKET_NAME = os.getenv("BUCKET_NAME")
 folder_path = "/tmp/"
 
-def get_unique_id():
-    """Generate a unique identifier."""
-    return str(uuid.uuid4())
+FAISS_file_name = ""
+
+def load_file_name():
+    ## Read from file named id_file_name.txt, store name in FAISS_file_name
+    return id 
 
 
 def load_index():
     """Download vector store files from S3 to local."""
-    s3_client.download_file(Bucket=BUCKET_NAME, Key="my_faiss.faiss", Filename=f"{folder_path}my_faiss.faiss")
-    s3_client.download_file(Bucket=BUCKET_NAME, Key="my_faiss.pkl", Filename=f"{folder_path}my_faiss.pkl")
+    s3_client.download_file(Bucket=BUCKET_NAME, Key=f"{FAISS_file_name}.faiss", Filename=f"{folder_path}{FAISS_file_name}.faiss")
+    s3_client.download_file(Bucket=BUCKET_NAME, Key=f"{FAISS_file_name}.pkl", Filename=f"{folder_path}{FAISS_file_name}.pkl")
 
 def get_llm(model_id):
     """Initialize and return a Bedrock Large Language Model."""
@@ -61,14 +63,14 @@ def get_response(llm, vectorstore, question, prompt_style="zero-shot"):
 def main():
     """Main function to run the Streamlit app for a utility chatbot."""
     st.header("Avertra Utility Chat Bot")
-        
+    FAISS_file_name = load_file_name()    
     load_index()
     dir_list = os.listdir(folder_path)
     st.write(f"Knowledge Base in: {folder_path}")
     st.write(dir_list)
 
     faiss_index = FAISS.load_local(
-        index_name="my_faiss",
+        index_name=f"{FAISS_file_name}",
         folder_path=folder_path,
         embeddings=bedrock_embeddings,
         allow_dangerous_deserialization=True
