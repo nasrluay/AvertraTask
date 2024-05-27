@@ -3,10 +3,11 @@ import streamlit as st
 import os
 import uuid
 from langchain_community.embeddings import BedrockEmbeddings
-from langchain.llms.bedrock import Bedrock
+from langchain_community.llms import Bedrock  # Update import based on deprecation warning
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_community.vectorstores import FAISS
+from datetime import datetime
 
 # AWS and Bedrock configuration
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
@@ -16,17 +17,31 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 BUCKET_NAME = os.getenv("BUCKET_NAME")
 folder_path = "/tmp/"
 
-FAISS_file_name = ""
 
-def load_file_name():
-    ## Read from file named id_file_name.txt, store name in FAISS_file_name
-    return id 
+def load_latest_faiss():
+    # List objects in the specified bucket
+    print(f"{BUCKET_NAME}")
+    response = s3_client.list_objects_v2(Bucket=BUCKET_NAME)
+    # Initialize a variable to keep track of the latest object
+    latest_object = None
 
+    # Iterate through the objects and find the latest one
+    for obj in response.get('Contents', []):
+        if latest_object is None or obj['LastModified'] > latest_object['LastModified']:
+            latest_object = obj
+    if latest_object:
+       return latest_object['Key']
+    else:
+        return None
 
-def load_index():
+    
+def load_index(FAISS_file_name):
     """Download vector store files from S3 to local."""
+    print(FAISS_file_name)
     s3_client.download_file(Bucket=BUCKET_NAME, Key=f"{FAISS_file_name}.faiss", Filename=f"{folder_path}{FAISS_file_name}.faiss")
     s3_client.download_file(Bucket=BUCKET_NAME, Key=f"{FAISS_file_name}.pkl", Filename=f"{folder_path}{FAISS_file_name}.pkl")
+
+
 
 def get_llm(model_id):
     """Initialize and return a Bedrock Large Language Model."""
@@ -63,12 +78,10 @@ def get_response(llm, vectorstore, question, prompt_style="zero-shot"):
 def main():
     """Main function to run the Streamlit app for a utility chatbot."""
     st.header("Avertra Utility Chat Bot")
-    FAISS_file_name = load_file_name()    
-    load_index()
-    dir_list = os.listdir(folder_path)
-    st.write(f"Knowledge Base in: {folder_path}")
-    st.write(dir_list)
-
+    FAISS_file_name = load_latest_faiss().split('.faiss')[0]
+    load_index(FAISS_file_name)
+    st.write(f"Knowledge Base in: {FAISS_file_name}")
+    
     faiss_index = FAISS.load_local(
         index_name=f"{FAISS_file_name}",
         folder_path=folder_path,

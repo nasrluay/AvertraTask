@@ -37,14 +37,38 @@ def create_vector_store(request_id, documents):
         st.error(f"Error creating vector store: {e}")
         return False
 
+def get_latest_object_key(bucket_name):
+    """Retrieve the key of the latest object in the specified S3 bucket."""
+    try:
+        s3 = boto3.client('s3')
+        response = s3.list_objects_v2(Bucket=bucket_name)
+
+        latest_object = None
+        for obj in response.get('Contents', []):
+            if latest_object is None or obj['LastModified'] > latest_object['LastModified']:
+                latest_object = obj
+
+        if latest_object:
+            return latest_object['Key']
+        else:
+            st.error("Bucket is empty or no objects found.")
+            return None
+    except Exception as e:
+        st.error(f"Error retrieving latest object from S3: {e}")
+        return None
+
 def admin_interface():
     """Admin interface to manage document processing and vector store management."""
     st.title("Admin Dashboard for Document Management")
 
+    latest_key = get_latest_object_key(BUCKET_NAME)
+    if latest_key:
+        st.write(f"Latest object key in S3: {latest_key}")
+
     uploaded_file = st.file_uploader("Upload a document for processing", type=["pdf", "txt"])
     if uploaded_file is not None:
         try:
-            request_id = get_unique_id()
+            request_id = str(uuid.uuid4())
             st.write(f"Request ID: {request_id}")
             file_extension = "pdf" if uploaded_file.type == "application/pdf" else "txt"
             saved_file_name = f"{request_id}.{file_extension}"
@@ -67,9 +91,13 @@ def admin_interface():
                 result = create_vector_store(request_id, splitted_docs)
                 if result:
                     st.success("Vector store created and uploaded successfully.")
-                    # Write request ID to file named id_file_name.txt
                 else:
                     st.error("Failed to create vector store. Check logs for details.")
+                # Update the latest object key in S3 after creating the vector store
+                latest_key = get_latest_object_key(BUCKET_NAME)
+                if latest_key:
+                    st.write(f"Updated latest object key in S3: {latest_key}")
+
         except Exception as e:
             st.error(f"An error occurred: {e}")
 
